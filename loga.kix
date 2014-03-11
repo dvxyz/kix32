@@ -1,0 +1,124 @@
+Function printDefaults
+	"default_appendix: " + $default_appendix ?
+	"default_suffix:   " + $default_suffix ?
+	"samba_share:      " + $samba_share ?
+	"samba_user:       " + $samba_user ?
+	"samba_pass:       " + $samba_pass ?
+	"database:         " + $database ?
+	"dbusername:       " + $dbusername ?
+	"dbpassword:       " + $dbpassword ?
+	"dbtype:           " + $dbtype ?
+	"remote_username:  " + $remote_username ?
+	"remote_password:  " + $remote_password ?
+	"server_log:       " + $server_log ?
+	
+	sleep 60
+EndFunction
+
+Function setDefaults
+	$default_appendix = "l2001"
+	$default_suffix = "%RELEASE%"
+		
+	$samba_share = LCASE("rel" + $default_suffix)
+	$samba_user = LCASE($default_appendix + $default_suffix)
+	$samba_pass = LCASE($samba_user)
+	$database = "LOGA" + $default_suffix
+	$dbusername = $default_appendix
+	$dbpassword = LCASE($dbusername + $default_suffix)
+	$dbtype = "oracle"
+	$remote_username = LCASE($default_appendix + $default_suffix)
+	$remote_password = LCASE($remote_username)
+	$server_logaabr = "wrexec -i /home/" + $remote_username + "/loga_abr"
+	$server_prozsrv = "wrexec -i /home/" + $remote_username + "/proz_srv"
+	$server_log = "1"
+
+	IF $default_suffix == "DEBRA"
+		$database = "DEVEL"
+		$dbpassword = LCASE("l2001dev")
+		$samba_share = "devel"
+		$samba_user  = "l2001devel"
+		$samba_pass  = "l2001devel"
+	ENDIF
+	
+	IF $default_suffix == "DEVEL"
+		$samba_share = LCASE($default_suffix)
+		$database = $default_suffix
+		$dbpassword = LCASE($dbusername + "dev")
+	ENDIF
+
+	IF $default_suffix == "X0"
+		$samba_share = "relx0"
+		$samba_user = "l2001"
+		$samba_pass = "l2001"
+		$database = "LOGAX0"
+		$dbusername = "l2001"
+		$dbpassword = "l2001"
+		$dbtype = "oracle"
+		$remote_username = "l2001"
+		$remote_password = "l2001"
+		$server_logaabr = "wrexec -i /home/" + $remote_username + "/loga_abr"
+		$server_prozsrv = "wrexec -i /home/" + $remote_username + "/proz_srv"
+		$server_log = "1"
+	ELSE
+
+	IF $default_suffix == "XS"
+		$samba_share = ""
+		$samba_user = ""
+		$samba_pass = ""
+		$dbtype = "odbc"
+		$remote_username = ""
+		$remote_password = ""
+		$server_logaabr = ""
+		$server_prozsrv = ""
+		$server_log = "0"
+
+		at (20,3) " Base de Datos: "
+		gets $database		
+	ENDIF
+EndFunction
+
+Function creaUnidades
+	shell "net use L: /D /Y"
+	shell "net use R: /D /Y"
+	shell "subst L: /D"
+	shell "subst R: /D"
+
+	shell "subst L: %LOGAPROD%\%USERLOGA%"
+	
+	IF $dbtype == "oracle"
+		shell "net use R: \\macabeo\loga\" + $samba_share + " /user:" + $samba_user + " " + $samba_pass + " /persistent:no"
+	ELSE
+		shell "subst R: L:\"
+	ENDIF
+EndFunction
+
+Function cambiaInis
+	$rc=writeprofilestring("P2001.INI","Rexec","RemoteHost","MACABEO")
+	$rc=writeprofilestring("P2001.INI","Rexec","RemoteUser",$remote_username)
+	$rc=writeprofilestring("P2001.INI","Rexec","RemotePassword",$remote_password)
+	$rc=writeprofilestring("P2001.INI","Rexec","PreExec","L2001dsf")
+
+	$rc=writeprofilestring("P2001.INI","SQL","Database",$database)
+	$rc=writeprofilestring("P2001.INI","SQL","User",$dbusername)
+	$rc=writeprofilestring("P2001.INI","SQL","Password",$dbpassword)
+	$rc=writeprofilestring("P2001.INI","SQL","DBType",$dbtype)
+
+	$rc=writeprofilestring("P2001.INI","DIALOG","SERVERLOG", $server_log)
+	$rc=writeprofilestring("P2001.INI","DIALOG","LOGA_ABR", $server_logaabr)
+	$rc=writeprofilestring("P2001.INI","DIALOG","PROZSRVR", $server_prozsrv)
+
+	$rc=writeprofilestring("P2001.INI","Abrechnung","Output","L:\log\" + %USERDOMAIN%_%USERNAME% + "\L2001.LOG")
+	$rc=writeprofilestring("P2001.INI","Abrechnung","Error","L:\log\" + %USERDOMAIN%_%USERNAME% + "\L2001.ERR")
+	$rc=writeprofilestring("P2001.INI","Loga_abr","Abrechnung.Output","L:\log\" + %USERDOMAIN%_%USERNAME% + "\LOGAABR.LOG")
+	$rc=writeprofilestring("P2001.INI","Loga_abr","Abrechnung.Error","L:\log\" + %USERDOMAIN%_%USERNAME% + "\LOGAABR.ERR")
+	$rc=writeprofilestring("P2001.INI","MERGEV3","Abrechnung.Output","L:\log\" + %USERDOMAIN%_%USERNAME% + "\MERGEV3.LOG")
+	$rc=writeprofilestring("P2001.INI","MERGEV3","Abrechnung.Error","L:\log\" + %USERDOMAIN%_%USERNAME% + "\MERGEV3.ERR")
+EndFunction
+
+break ON
+cls
+setDefaults()
+;;; printDefaults()
+creaUnidades()
+cambiaInis()
+return
