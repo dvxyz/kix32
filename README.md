@@ -1,4 +1,4 @@
 kix32
 =====
 
-KiXtart scripts
+KiXtart scripts (http://www.kixtart.org)
