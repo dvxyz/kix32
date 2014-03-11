@@ -1,0 +1,49 @@
+break ON
+cls
+$Dir = "C:\WINDOWS"
+$File = Dir( $Dir + "\P2001.LOGA*.*.INI" )
+$Item = 1
+$Default_p2001ini="P2001.LOGAXS.INI"
+$P2001INIFile=""
+
+DIM $Menu[10]
+
+WHILE @ERROR = 0 AND $File
+	
+    ? $Item 
+	": " 
+	$File
+	
+	$Menu[$Item] = $File
+	
+	IF @ERROR = 0
+		; try for next subkey
+		$File = Dir("")
+	ENDIF
+   
+	$Item = $Item + 1
+
+LOOP
+
+$Item = $Item - 1
+
+IF $Use_defaultp2001ini = 1
+	$P2001INIFile=$Default_p2001ini
+ENDIF
+
+at (21,3) "Default: " + $Default_p2001ini
+at (20,3) "Seleccionar P2001INI (1 - " + $Item + "): "
+gets $value
+
+cls
+
+IF $value = ""
+	$P2001INIFile = $Default_p2001ini
+ELSE
+	$P2001INIFile = $Menu[$value]
+ENDIF
+
+cls
+copy "%WINDIR%\" + $P2001INIFile "%WINDIR%\P2001.INI"
+
+return
